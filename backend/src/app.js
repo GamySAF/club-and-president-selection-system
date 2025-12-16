@@ -7,7 +7,8 @@ const adminRoutes = require("./routes/admin.routes");
 const app = express();
 
 app.use(cors({
-  origin: "https://club-and-president-selection-system.vercel.app",
+  origin: 'https://club-and-president-selection-system.vercel.app', // Your frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 
