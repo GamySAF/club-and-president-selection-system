@@ -6,7 +6,11 @@ const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "https://club-and-president-selection-system.vercel.app",
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use("/api", adminRoutes);
