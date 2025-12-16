@@ -34,10 +34,16 @@ const AdminLogin = () => {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/login`, {
+   console.log("Sending login request...");
+const res = await fetch(`${API_URL}/api/admin/login`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ email, password }),
+});
+console.log("Response received:", res);
+const data = await res.json();
+console.log("Data:", data);
+
 });
 
 
