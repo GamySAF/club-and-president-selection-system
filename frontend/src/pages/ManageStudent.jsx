@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const ManageStudents = () => {
   const { token } = useAuth(); // always valid token
@@ -16,7 +17,7 @@ const ManageStudents = () => {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/admin/students", {
+       const res = await fetch(`${API_URL}/api/admin/students`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -48,7 +49,7 @@ const ManageStudents = () => {
 
   const updateStudent = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/students/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/students/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -65,13 +66,13 @@ const ManageStudents = () => {
     }
   };
 
-  // Delete student
+  // Deletes student
   const deleteStudent = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/students/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`${API_URL}/api/admin/students/${id}`, {
+      method: "DELETE",
+       headers: { Authorization: `Bearer ${token}` },
+});
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to delete student");
       fetchStudents();
