@@ -17,7 +17,7 @@ const {
   loginAdmin
 } = require("../controllers/admin.controller");
 
-router.post("/admin/login", loginAdmin);
+router.post("/login", loginAdmin);
 
 
 const protect = require("../middleware/auth");
