@@ -5,8 +5,6 @@ import { useAuth } from "../context/AuthContext";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const AdminLogin = () => {
-  console.log("API_URL:", API_URL);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,7 +13,6 @@ const AdminLogin = () => {
   const { user, login } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in as admin
   useEffect(() => {
     if (user?.role === "admin") {
       navigate("/admin-dashboard", { replace: true });
@@ -52,10 +49,7 @@ const AdminLogin = () => {
         return;
       }
 
-      // Save user and token in context and localStorage
       login(data.user, data.token);
-
-      // Navigate immediately after login
       navigate("/admin-dashboard", { replace: true });
     } catch (err) {
       console.error(err);
