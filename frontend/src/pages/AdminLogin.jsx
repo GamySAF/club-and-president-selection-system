@@ -4,7 +4,10 @@ import { useAuth } from "../context/AuthContext";
 const API_URL = import.meta.env.VITE_API_URL;
 
 
+
 const AdminLogin = () => {
+  console.log("API_URL:", API_URL);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
