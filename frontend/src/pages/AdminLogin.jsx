@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
 const API_URL = import.meta.env.VITE_API_URL;
-
-
 
 const AdminLogin = () => {
   console.log("API_URL:", API_URL);
@@ -33,21 +32,20 @@ const AdminLogin = () => {
     }
 
     setLoading(true);
+
     try {
-   console.log("Sending login request...");
-const res = await fetch(`${API_URL}/api/admin/login`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email, password }),
-});
-console.log("Response received:", res);
-const data = await res.json();
-console.log("Data:", data);
+      console.log("Sending login request...");
 
-});
+      const res = await fetch(`${API_URL}/api/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
+      console.log("Response received:", res);
 
       const data = await res.json();
+      console.log("Data:", data);
 
       if (!res.ok) {
         setError(data.message || "Failed to login");
@@ -55,13 +53,12 @@ console.log("Data:", data);
       }
 
       // Save user and token in context and localStorage
-login(data.user, data.token);
-
-
+      login(data.user, data.token);
 
       // Navigate immediately after login
       navigate("/admin-dashboard", { replace: true });
     } catch (err) {
+      console.error(err);
       setError("Network error, please try again");
     } finally {
       setLoading(false);
@@ -84,6 +81,7 @@ login(data.user, data.token);
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full mb-4 p-2 border rounded"
+          autoComplete="username"
         />
         <input
           type="password"
@@ -91,6 +89,7 @@ login(data.user, data.token);
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full mb-4 p-2 border rounded"
+          autoComplete="current-password"
         />
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
