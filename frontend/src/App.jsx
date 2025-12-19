@@ -43,6 +43,15 @@ function App() {
           />
 
           <Route
+  path="/student/results"
+  element={
+    <ProtectedRoute role="student">
+      <ViewResults />
+    </ProtectedRoute>
+  }
+/>
+
+          <Route
   path="/student/clubs"
   element={
     <ProtectedRoute role="student">

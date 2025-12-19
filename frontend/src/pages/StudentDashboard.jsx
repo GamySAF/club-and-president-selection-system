@@ -14,18 +14,18 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // If student has already voted, we can change button appearance
+  // If student has already voted, we use this to disable the voting button
   const hasVoted = user?.hasVoted || false;
 
   const menuItems = [
     { 
       label: "Vote for President", 
-      path: "/student/vote", // ✅ Updated to match your App.jsx route
+      path: "/student/vote", 
       icon: CheckSquare, 
       color: "text-blue-600", 
       bg: "bg-blue-50",
-      disabled: hasVoted,
-      desc: hasVoted ? "Vote Recorded" : "Cast your ballot"
+      disabled: hasVoted, // Button is disabled if they have already voted
+      desc: hasVoted ? "Ballot Submitted" : "Cast your vote now"
     },
     { 
       label: "Select Clubs", 
@@ -33,15 +33,15 @@ const StudentDashboard = () => {
       icon: Users2, 
       color: "text-emerald-600", 
       bg: "bg-emerald-50",
-      desc: "Join organizations"
+      desc: "Join campus organizations"
     },
     { 
       label: "View Results", 
-      path: "/admin/results", // Ensure this matches your route for viewing results
+      path: "/student/results", // ✅ FIXED: Point to the student results route
       icon: BarChart3, 
       color: "text-purple-600", 
       bg: "bg-purple-50",
-      desc: "See live standings"
+      desc: "Live election standings"
     },
   ];
 
@@ -83,7 +83,7 @@ const StudentDashboard = () => {
                 className={`w-full flex items-center justify-between p-3.5 rounded-2xl border border-transparent transition-all group ${
                   item.disabled 
                     ? "opacity-60 cursor-not-allowed bg-slate-50" 
-                    : "hover:border-slate-100 hover:bg-slate-50"
+                    : "hover:border-slate-100 hover:bg-slate-50 active:scale-[0.98]"
                 }`}
               >
                 <div className="flex items-center gap-4">
@@ -98,6 +98,9 @@ const StudentDashboard = () => {
                 {!item.disabled && (
                   <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transform group-hover:translate-x-0.5 transition-all" />
                 )}
+                {item.disabled && (
+                   <CheckSquare className="w-4 h-4 text-emerald-500" />
+                )}
               </button>
             ))}
           </nav>
@@ -107,12 +110,12 @@ const StudentDashboard = () => {
         <div className="px-6 py-4 bg-slate-50/50 flex flex-col items-center border-t border-slate-100">
             {hasVoted ? (
               <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase tracking-wider">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                Election Participation Verified
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                Ballot Verified & Secured
               </div>
             ) : (
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Please cast your vote before the deadline
+                System Status: Voting Open
               </p>
             )}
         </div>

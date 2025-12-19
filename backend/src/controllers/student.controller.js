@@ -156,6 +156,22 @@ exports.selectClubs = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+exports.viewResultsStudent = async (req, res) => {
+  try {
+    const candidates = await Candidate.find().select("name party votes");
+    const totalStudents = await Student.countDocuments({ role: "student" });
+    const totalVoted = await Student.countDocuments({ role: "student", hasVoted: true });
+
+    // ✅ Ensure the key is named 'candidates'
+    res.json({ 
+      candidates: candidates || [], 
+      totalStudents, 
+      totalVoted 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 // Get all candidates for the ballot
 exports.getCandidates = async (req, res) => {

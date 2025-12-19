@@ -23,10 +23,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   // ADDED: Function to update user fields (like hasVoted) dynamically
+// ADDED: Function to update user fields (like hasVoted or selectedClubs) dynamically
   const updateUser = (newData) => {
     setUser((prev) => {
       if (!prev) return null;
+      
+      // We create the updated object
       const updated = { ...prev, ...newData };
+      
+      // ✅ CRITICAL: Update localStorage immediately so refresh doesn't lose data
       localStorage.setItem("user", JSON.stringify(updated));
       return updated;
     });

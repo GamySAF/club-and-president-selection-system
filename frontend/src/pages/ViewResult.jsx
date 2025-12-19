@@ -1,53 +1,61 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { 
-  BarChart3, 
-  Users, 
-  CheckCircle2, 
-  PieChart,
-  Loader2,
-  RefreshCcw,
-  Trophy
+  BarChart3, Users, CheckCircle2, PieChart, 
+  Loader2, RefreshCcw, Trophy, UserCheck 
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ViewResults = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const isAdmin = user?.role === "admin";
 
-  const fetchResults = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/admin/results`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to fetch results");
-      
-      // Sort candidates by votes (highest first)
-      const sortedCandidates = json.candidates.sort((a, b) => b.votes - a.votes);
-      setData({ ...json, candidates: sortedCandidates });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+const fetchResults = async () => {
+  setLoading(true);
+  try {
+    const endpoint = isAdmin ? "/api/admin/results" : "/api/student/results";
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json();
+    
+    if (!res.ok) throw new Error(json.message || "Failed to fetch");
+
+    // ✅ THE FIX: Check if candidates exists and is an array
+    let rawCandidates = [];
+    
+    if (json.candidates && Array.isArray(json.candidates)) {
+      rawCandidates = json.candidates;
+    } else if (Array.isArray(json)) {
+      rawCandidates = json;
     }
-  };
 
-  useEffect(() => {
-    fetchResults();
-  }, [token]);
+    const sortedCandidates = [...rawCandidates].sort((a, b) => b.votes - a.votes);
+    
+    // Set data while preserving the stats (totalStudents, etc)
+    setData({
+      totalStudents: json.totalStudents || 0,
+      totalVoted: json.totalVoted || 0,
+      candidates: sortedCandidates
+    });
 
-  if (loading && !data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-        <Loader2 className="h-10 w-10 animate-spin text-purple-600" />
-      </div>
-    );
+  } catch (err) {
+    console.error("Fetch error:", err.message);
+    setError(err.message);
+  } finally {
+    setLoading(false);
   }
+};
+  useEffect(() => { fetchResults(); }, [token]);
+
+  if (loading && !data) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+    </div>
+  );
 
   const turnoutPercentage = data?.totalStudents > 0 
     ? Math.round((data.totalVoted / data.totalStudents) * 100) 
@@ -55,97 +63,112 @@ const ViewResults = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-10">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
-              <BarChart3 className="text-purple-600" /> Election Analytics
-            </h1>
-            <p className="text-slate-500 font-medium mt-1">Live overview of voting participation and results.</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Election Live Results</h1>
+            <p className="text-slate-500 font-medium">Real-time voting statistics and candidate standings.</p>
           </div>
-          <button 
-            onClick={fetchResults}
-            className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-slate-600 shadow-sm"
-          >
+          <button onClick={fetchResults} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 shadow-sm">
             <RefreshCcw size={20} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Users /></div>
-              <div>
-                <p className="text-sm font-bold text-slate-400 uppercase">Total Students</p>
-                <h3 className="text-2xl font-black text-slate-800">{data?.totalStudents}</h3>
-              </div>
+        {/* Global Stats Grid (Visible to All) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-5">
+            <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl"><Users size={28}/></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Eligible Students</p>
+              <h3 className="text-3xl font-black text-slate-900">{data?.totalStudents}</h3>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><CheckCircle2 /></div>
-              <div>
-                <p className="text-sm font-bold text-slate-400 uppercase">Votes Cast</p>
-                <h3 className="text-2xl font-black text-slate-800">{data?.totalVoted}</h3>
-              </div>
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-5">
+            <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl"><UserCheck size={28}/></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Votes Cast</p>
+              <h3 className="text-3xl font-black text-slate-900">{data?.totalVoted}</h3>
             </div>
           </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><PieChart /></div>
-              <div>
-                <p className="text-sm font-bold text-slate-400 uppercase">Turnout %</p>
-                <h3 className="text-2xl font-black text-slate-800">{turnoutPercentage}%</h3>
-              </div>
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-5">
+            <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl"><PieChart size={28}/></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Voter Turnout</p>
+              <h3 className="text-3xl font-black text-slate-900">{turnoutPercentage}%</h3>
             </div>
           </div>
         </div>
 
-        {/* Results Chart */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2">
-              <Trophy className="text-amber-500" size={20} /> Presidential Standings
-            </h2>
-          </div>
-          
-          <div className="p-8 space-y-8">
-            {data?.candidates.map((c, index) => {
-              const percentage = data.totalVoted > 0 ? (c.votes / data.totalVoted) * 100 : 0;
-              
-              return (
-                <div key={c._id} className="relative">
-                  <div className="flex justify-between items-end mb-2">
-                    <div>
-                      <span className={`text-xs font-black px-2 py-1 rounded mr-2 ${index === 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {index === 0 ? "LEADER" : `RANK ${index + 1}`}
-                      </span>
-                      <span className="font-bold text-slate-700">{c.name}</span>
-                    </div>
-                    <span className="font-black text-slate-900">{c.votes} <span className="text-slate-400 text-sm font-normal">votes</span></span>
-                  </div>
-                  
-                  {/* Progress Bar Container */}
-                  <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-1000 ${index === 0 ? 'bg-purple-600' : 'bg-indigo-400'}`}
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
+        {/* Candidate Boxes Grid */}
+      {/* Candidate Boxes Grid */}
+<h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+  <Trophy className="text-amber-500" /> Candidate Standings
+</h2>
 
-            {data?.candidates.length === 0 && (
-              <p className="text-center text-slate-400 py-10 italic">No candidates registered yet.</p>
-            )}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {data?.candidates?.map((c, index) => {
+    // 1. Calculate the sum of all votes to ensure the percentage is accurate
+    // We use data.totalVoted, but as a backup, we calculate it from the array
+    const totalVotesInArray = data.candidates.reduce((sum, cand) => sum + cand.votes, 0);
+    const denominator = data.totalVoted || totalVotesInArray;
+    
+    // 2. Calculate percentage
+    const percentage = denominator > 0 
+      ? (c.votes / denominator) * 100 
+      : 0;
+
+    return (
+      <div 
+        key={`${c._id}-${c.votes}`} // ✅ Changing key forces React to re-animate the bar on vote change
+        className={`relative bg-white border-2 p-6 rounded-[2.5rem] transition-all duration-500 ${
+          index === 0 ? "border-indigo-500 ring-4 ring-indigo-50 shadow-lg" : "border-slate-100 hover:border-slate-300"
+        }`}
+      >
+        {index === 0 && (
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-1 shadow-md">
+            <Trophy size={12} /> Leading
+          </div>
+        )}
+        
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-xl font-black text-slate-900 leading-tight">{c.name}</h3>
+            <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mt-1">{c.party}</p>
+          </div>
+          <div className="text-right">
+            <span className="text-2xl font-black text-slate-900">{c.votes}</span>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Votes</p>
           </div>
         </div>
+
+        {/* Box Progress Bar Section */}
+        <div className="mt-6">
+          <div className="flex justify-between text-[11px] font-black uppercase mb-2">
+            <span className="text-slate-500">Vote Share</span>
+            <span className="text-indigo-600 font-bold">{percentage.toFixed(1)}%</span>
+          </div>
+          
+          {/* Progress Track */}
+          <div className="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner border border-slate-200/50">
+            <div 
+              className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                index === 0 
+                  ? "bg-gradient-to-r from-indigo-500 to-indigo-700" 
+                  : "bg-slate-400"
+              }`}
+              // ✅ Inline style must use the percentage variable
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>
+        
+        
       </div>
     </div>
   );
