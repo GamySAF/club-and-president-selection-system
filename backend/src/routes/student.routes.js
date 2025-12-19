@@ -5,7 +5,9 @@ const {
   getProfile,
   votePresident,
   selectClubs,
-  viewResultsStudent  // <-- add this
+  getAllClubs,       // 👈 Add this: To list available clubs
+  getCandidates,
+  viewResultsStudent
 } = require("../controllers/student.controller");
 const protect = require("../middleware/auth");
 const studentOnly = require("../middleware/studentOnly");
@@ -15,9 +17,11 @@ router.post("/login", loginStudent);
 
 // PROTECTED (Student only)
 router.get("/profile", protect, studentOnly, getProfile);
+router.get("/candidates", protect, studentOnly, getCandidates);
+router.get("/all-clubs", protect, studentOnly, getAllClubs); // 👈 Add this: Frontend needs this to show the list
 router.post("/vote", protect, studentOnly, votePresident);
 router.post("/clubs", protect, studentOnly, selectClubs);
-router.get("/results", protect, studentOnly, viewResultsStudent); // <-- student results route
+router.get("/results", protect, studentOnly, viewResultsStudent);
 
 module.exports = router;
 

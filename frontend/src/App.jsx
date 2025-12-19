@@ -11,7 +11,8 @@ import ManageStudents from "./pages/ManageStudent";
 import ManageCandidates from "./pages/ManageCandidates";
 import ManageClubs from "./pages/ManageClubs";
 import ViewResults from "./pages/ViewResult";
-
+import VotePresident from "./pages/VotePresident";
+import SelectClubs from "./pages/SelectClubs";
 function App() {
   return (
     <AuthProvider>
@@ -40,6 +41,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+  path="/student/clubs"
+  element={
+    <ProtectedRoute role="student">
+      <SelectClubs />
+    </ProtectedRoute>
+  }
+/>
 
             {/* MANAGE STUDENTS - protected */}
   <Route
@@ -73,6 +83,16 @@ function App() {
   element={
     <ProtectedRoute role="admin">
       <ViewResults />
+    </ProtectedRoute>
+  }
+/>
+
+{/* App.jsx */}
+<Route
+  path="/student/vote" // <--- Ensure this is EXACTLY the same
+  element={
+    <ProtectedRoute role="student">
+      <VotePresident />
     </ProtectedRoute>
   }
 />

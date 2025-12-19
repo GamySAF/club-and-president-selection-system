@@ -87,13 +87,14 @@ exports.registerStudent = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
-    const student = await Student.create({
-      name: name.trim(),
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      role: role || "student",
-    });
+// Updated section in your controller
+const student = await Student.create({
+  name: name.trim(),
+  email: email.toLowerCase(),
+  password: hashedPassword,
+  role: role || "student",
+  hasVoted: false, // Explicitly set to false on creation
+});
 
     res.status(201).json({
       _id: student._id,

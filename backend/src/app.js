@@ -19,7 +19,7 @@ app.use(express.json());
 
 
 // Routes
-app.use("/api/students", studentRoutes);
+app.use("/api/student", studentRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Test endpoint

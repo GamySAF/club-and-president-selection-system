@@ -37,29 +37,32 @@ exports.registerStudent = async (req, res) => {
 };
 
 
-// Login Student
 exports.loginStudent = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const student = await Student.findOne({ email });
+    const student = await Student.findOne({ email: email.toLowerCase() });
 
     if (student && (await bcrypt.compare(password, student.password))) {
+      // ✅ WRAP the data in a 'user' object to match frontend expectations
       res.json({
-        _id: student._id,
-        name: student.name,
-        email: student.email,
-        role: student.role,
-        token: generateToken(student), // ✅ FIXED
+        success: true,
+        token: generateToken(student),
+        user: {
+          _id: student._id,
+          name: student.name,
+          email: student.email,
+          role: student.role,
+          hasVoted: student.hasVoted || false
+        },
       });
     } else {
-      res.status(401).json({ message: "Invalid credentials" });
+      res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // Get Profile
 exports.getProfile = async (req, res) => {
@@ -118,8 +121,8 @@ exports.votePresident = async (req, res) => {
 exports.selectClubs = async (req, res) => {
   try {
     const student = await Student.findById(req.user.id);
+    const { clubIds } = req.body; 
 
-    const { clubIds } = req.body; // array of club IDs student wants to join
     if (!Array.isArray(clubIds) || clubIds.length === 0) {
       return res.status(400).json({ message: "No clubs selected" });
     }
@@ -128,24 +131,47 @@ exports.selectClubs = async (req, res) => {
 
     for (const id of clubIds) {
       const club = await Club.findById(id);
-      if (!club) continue; // skip invalid clubs
+      if (!club) continue;
 
-      // Safer ObjectId comparison
-      if (!student.selectedClubs.map(c => c.toString()).includes(club._id.toString())) {
+      // Convert ObjectIds to strings before comparing
+      const alreadyJoined = student.selectedClubs.some(
+        (existingId) => existingId.toString() === club._id.toString()
+      );
+
+      if (!alreadyJoined) {
         student.selectedClubs.push(club._id);
         joinedClubs.push(club.name);
       }
     }
 
-    await student.save();
-
     if (joinedClubs.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "You have already joined the selected clubs" });
+      return res.status(400).json({ 
+        message: "You are already a member of the selected clubs" 
+      });
     }
 
-    res.json({ message: `You joined: ${joinedClubs.join(", ")}` });
+    await student.save();
+    res.json({ message: `Success! You joined: ${joinedClubs.join(", ")}` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all candidates for the ballot
+exports.getCandidates = async (req, res) => {
+  try {
+    // We fetch name, party, and manifesto, but exclude 'votes' for students
+    const candidates = await Candidate.find().select("-votes"); 
+    res.json(candidates);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching candidates: " + error.message });
+  }
+};
+
+exports.getAllClubs = async (req, res) => {
+  try {
+    const clubs = await Club.find();
+    res.json(clubs);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
