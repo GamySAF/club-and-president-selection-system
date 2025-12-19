@@ -8,6 +8,9 @@ import StudentDashboard from "./pages/StudentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import ManageStudents from "./pages/ManageStudent";
+import ManageCandidates from "./pages/ManageCandidates";
+import ManageClubs from "./pages/ManageClubs";
+import ViewResults from "./pages/ViewResult";
 
 function App() {
   return (
@@ -47,6 +50,32 @@ function App() {
       </ProtectedRoute>
     }
   />
+
+   <Route
+  path="/admin/manage-candidates"
+  element={
+    <ProtectedRoute role="admin">
+      <ManageCandidates />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/manage-clubs"
+  element={
+    <ProtectedRoute role="admin">
+      <ManageClubs />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/results"
+  element={
+    <ProtectedRoute role="admin">
+      <ViewResults />
+    </ProtectedRoute>
+  }
+/>
           
 
           {/* OPTIONAL: catch all / redirect to login */}

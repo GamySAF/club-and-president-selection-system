@@ -1,160 +1,81 @@
-// import React, { useState, useEffect } from "react";
-// import { useAuth } from "../context/AuthContext";
-
-// const AdminDashboard = () => {
-//   const { user, token } = useAuth(); // Get admin token
-//   const [students, setStudents] = useState([]);
-//   const [name, setName] = useState("");
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const [error, setError] = useState("");
-//   const [loading, setLoading] = useState(false);
-
-//   // Fetch all students
-//   const fetchStudents = async () => {
-//     try {
-//       const res = await fetch("http://localhost:5000/api/admin/students", {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       const data = await res.json();
-//       if (!res.ok) throw new Error(data.message || "Failed to fetch students");
-//       setStudents(data);
-//     } catch (err) {
-//       setError(err.message);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchStudents();
-//   }, []);
-
-//   // Add a new student
-//   const handleAddStudent = async (e) => {
-//     e.preventDefault();
-//     setError("");
-//     setLoading(true);
-
-//     if (!name || !email || !password) {
-//       setError("All fields are required");
-//       setLoading(false);
-//       return;
-//     }
-
-//     try {
-//       const res = await fetch("http://localhost:5000/api/admin/students", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ name, email, password, role: "student" }),
-//       });
-
-//       const data = await res.json();
-//       if (!res.ok) throw new Error(data.message || "Failed to add student");
-
-//       // Clear form
-//       setName("");
-//       setEmail("");
-//       setPassword("");
-
-//       // Refresh student list
-//       fetchStudents();
-//     } catch (err) {
-//       setError(err.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="p-6">
-//       <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-
-//       <section className="mb-6">
-//         <h2 className="text-xl font-semibold mb-2">Add Student</h2>
-//         {error && <p className="text-red-500 mb-2">{error}</p>}
-//         <form onSubmit={handleAddStudent} className="flex flex-col max-w-sm gap-2">
-//           <input
-//             type="text"
-//             placeholder="Name"
-//             value={name}
-//             onChange={(e) => setName(e.target.value)}
-//             className="p-2 border rounded"
-//           />
-//           <input
-//             type="email"
-//             placeholder="Email"
-//             value={email}
-//             onChange={(e) => setEmail(e.target.value)}
-//             className="p-2 border rounded"
-//           />
-//           <input
-//             type="password"
-//             placeholder="Password"
-//             value={password}
-//             onChange={(e) => setPassword(e.target.value)}
-//             className="p-2 border rounded"
-//           />
-//           <button
-//             type="submit"
-//             disabled={loading}
-//             className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
-//           >
-//             {loading ? "Adding..." : "Add Student"}
-//           </button>
-//         </form>
-//       </section>
-
-//       <section>
-//         <h2 className="text-xl font-semibold mb-2">All Students</h2>
-//         <ul className="border rounded p-2">
-//           {students.map((s) => (
-//             <li key={s._id} className="p-1 border-b last:border-b-0">
-//               {s.name} — {s.email}
-//             </li>
-//           ))}
-//           {students.length === 0 && <p>No students added yet.</p>}
-//         </ul>
-//       </section>
-//     </div>
-//   );
-// };
-
-// export default AdminDashboard;
-
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
+import { 
+  Users, 
+  UserPlus, 
+  Flag, 
+  BarChart3, 
+  Shield, 
+  ChevronRight,
+  LogOut 
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const menuItems = [
+    { label: "Manage Students", path: "/admin/manage-students", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Manage Candidates", path: "/admin/manage-candidates", icon: UserPlus, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { label: "Manage Clubs", path: "/admin/manage-clubs", icon: Flag, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "View Election Results", path: "/admin/results", icon: BarChart3, color: "text-purple-600", bg: "bg-purple-50" },
+  ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded shadow w-96">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          Admin Dashboard
-        </h1>
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100 overflow-hidden">
+        
+        {/* Compact Header: Reduced padding and margins */}
+        <div className="p-8 pb-7 bg-slate-900">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-500/20 rounded-lg border border-indigo-400/20">
+                <Shield className="text-indigo-300 w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-white leading-none">Admin Console</h1>
+                <p className="text-slate-400 text-[11px] mt-1 font-medium tracking-wide">SYSTEM OVERVIEW</p>
+              </div>
+            </div>
+            <button 
+              onClick={logout}
+              className="p-2 bg-slate-800 hover:bg-red-500/10 text-slate-400 hover:text-red-400 rounded-lg transition-all"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
 
-        <div className="space-y-4">
-          <button
-            onClick={() => navigate("/admin/manage-students")}
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-          >
-            Manage Students
-          </button>
+        {/* Menu Items: Tighter spacing */}
+        <div className="p-4 space-y-1.5">
+          <nav>
+            {menuItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-2.5 ${item.bg} ${item.color} rounded-xl group-hover:scale-105 transition-transform`}>
+                    <item.icon size={18} />
+                  </div>
+                  <span className="font-bold text-slate-700 text-sm">{item.label}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transform group-hover:translate-x-0.5 transition-all" />
+              </button>
+            ))}
+          </nav>
+        </div>
 
-          <button className="w-full bg-gray-400 text-white py-2 rounded cursor-not-allowed">
-            Add Candidates
-          </button>
-
-          <button className="w-full bg-gray-400 text-white py-2 rounded cursor-not-allowed">
-            Add Clubs
-          </button>
-
-          <button className="w-full bg-gray-400 text-white py-2 rounded cursor-not-allowed">
-            View Results
-          </button>
+        {/* Status Bar: Slimmer */}
+        <div className="px-6 py-3 bg-slate-50/50 flex justify-between items-center border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live System</span>
+          </div>
+          <span className="text-[10px] font-black text-slate-300">v1.0.4</span>
         </div>
       </div>
     </div>
@@ -162,8 +83,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-
-
-
-
