@@ -5,10 +5,12 @@ const studentRoutes = require("./routes/student.routes");
 const adminRoutes = require("./routes/admin.routes");
 
 const app = express();
-
 app.use(cors({
-  origin: 'https://club-and-president-selection-system.vercel.app', // Your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: [
+    'https://club-and-president-selection-system.vercel.app', // Production
+    'http://localhost:5173'                                   // Local Development
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
 
