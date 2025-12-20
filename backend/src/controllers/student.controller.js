@@ -77,6 +77,26 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// backend/routes/student.routes.js (or similar)
+// backend/controllers/student.controller.js
+exports.getResults = async (req, res) => {
+  try {
+    const totalStudents = await Student.countDocuments({ role: 'student' });
+    const candidates = await Candidate.find();
+    
+    // Calculate total votes cast across all candidates
+    const totalVotes = candidates.reduce((sum, c) => sum + c.votes, 0);
+
+    // ✅ SEND AN OBJECT, NOT AN ARRAY
+    res.json({
+      totalStudents,
+      totalVotes,
+      candidates
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 const mongoose = require("mongoose");
 exports.votePresident = async (req, res) => {
