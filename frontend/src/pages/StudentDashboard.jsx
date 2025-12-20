@@ -24,7 +24,7 @@ const StudentDashboard = () => {
       icon: CheckSquare, 
       color: "text-blue-600", 
       bg: "bg-blue-50",
-      disabled: hasVoted, // Button is disabled if they have already voted
+   // Button is disabled if they have already voted
       desc: hasVoted ? "Ballot Submitted" : "Cast your vote now"
     },
     { 

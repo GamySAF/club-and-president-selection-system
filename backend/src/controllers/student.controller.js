@@ -45,17 +45,20 @@ exports.loginStudent = async (req, res) => {
 
     if (student && (await bcrypt.compare(password, student.password))) {
       // ✅ WRAP the data in a 'user' object to match frontend expectations
-      res.json({
-        success: true,
-        token: generateToken(student),
-        user: {
-          _id: student._id,
-          name: student.name,
-          email: student.email,
-          role: student.role,
-          hasVoted: student.hasVoted || false
-        },
-      });
+   res.json({
+  success: true,
+  token: generateToken(student),
+  user: {
+    _id: student._id,
+    name: student.name,
+    email: student.email,
+    role: student.role,
+    hasVoted: student.hasVoted || false,
+    // ✅ ADD THESE TWO LINES:
+    votedFor: student.votedFor || null,
+    selectedClubs: student.selectedClubs || []
+  },
+});
     } else {
       res.status(401).json({ message: "Invalid email or password" });
     }
@@ -76,7 +79,6 @@ exports.getProfile = async (req, res) => {
 
 
 const mongoose = require("mongoose");
-
 exports.votePresident = async (req, res) => {
   try {
     const student = await Student.findById(req.user.id);
@@ -100,24 +102,60 @@ exports.votePresident = async (req, res) => {
     const candidate = await Candidate.findByIdAndUpdate(
       candidateId,
       { $inc: { votes: 1 } },
-      { new: true } // return the updated document
+      { new: true } 
     );
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
 
-    // Mark student as voted
+    // ✅ THE MISSING PART: Save the candidate choice to the student record
     student.hasVoted = true;
+    student.votedFor = candidateId; // This tells the DB who the student picked
     await student.save();
 
-    res.json({ message: `You voted for ${candidate.name}` });
+    // ✅ RETURN the candidateId so the frontend can update immediately
+    res.json({ 
+      message: `You voted for ${candidate.name}`,
+      votedFor: candidateId 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// -------------------- Select Clubs --------------------
+exports.castVote = async (req, res) => {
+  const { candidateId } = req.body;
+  const studentId = req.user.id; // From your auth middleware
+
+  try {
+    const student = await Student.findById(studentId);
+    if (student.hasVoted) {
+      return res.status(400).json({ message: "You have already cast your vote." });
+    }
+
+    const candidate = await Candidate.findById(candidateId);
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found." });
+    }
+
+    // ✅ RECORD THE VOTE
+    candidate.votes += 1;
+    student.hasVoted = true;
+    student.votedFor = candidateId; // Save the specific candidate ID
+
+    await candidate.save();
+    await student.save();
+
+    res.json({ 
+      message: `Vote successfully cast for ${candidate.name}`,
+      votedFor: candidateId 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.selectClubs = async (req, res) => {
   try {
     const student = await Student.findById(req.user.id);
@@ -127,35 +165,48 @@ exports.selectClubs = async (req, res) => {
       return res.status(400).json({ message: "No clubs selected" });
     }
 
-    const joinedClubs = [];
+    // 1. Check how many clubs they ALREADY have
+    const currentCount = student.selectedClubs.length;
 
-    for (const id of clubIds) {
-      const club = await Club.findById(id);
-      if (!club) continue;
+    // 2. Check how many NEW clubs they are trying to join
+    // We only count IDs that aren't already in the student's list
+    const newClubIds = clubIds.filter(id => 
+      !student.selectedClubs.some(existingId => existingId.toString() === id.toString())
+    );
 
-      // Convert ObjectIds to strings before comparing
-      const alreadyJoined = student.selectedClubs.some(
-        (existingId) => existingId.toString() === club._id.toString()
-      );
-
-      if (!alreadyJoined) {
-        student.selectedClubs.push(club._id);
-        joinedClubs.push(club.name);
-      }
-    }
-
-    if (joinedClubs.length === 0) {
+    // 3. ENFORCE THE LIMIT: Total must not exceed 2
+    if (currentCount + newClubIds.length > 2) {
       return res.status(400).json({ 
-        message: "You are already a member of the selected clubs" 
+        message: `Limit exceeded! You can join at most 2 clubs. You currently have ${currentCount} slot(s) filled.` 
       });
     }
 
+    // 4. If limit is okay, add them
+    const joinedClubsNames = [];
+    for (const id of newClubIds) {
+      const club = await Club.findById(id);
+      if (club) {
+        student.selectedClubs.push(club._id);
+        joinedClubsNames.push(club.name);
+      }
+    }
+
+    if (joinedClubsNames.length === 0) {
+      return res.status(400).json({ message: "You are already a member of these clubs" });
+    }
+
     await student.save();
-    res.json({ message: `Success! You joined: ${joinedClubs.join(", ")}` });
+    res.json({ 
+      message: `Success! You joined: ${joinedClubsNames.join(", ")}`,
+      selectedClubs: student.selectedClubs // Return the updated list for the frontend
+    });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 exports.viewResultsStudent = async (req, res) => {
   try {
     const candidates = await Candidate.find().select("name party votes");

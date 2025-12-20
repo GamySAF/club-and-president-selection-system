@@ -142,7 +142,7 @@ const fetchResults = async () => {
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total Votes</p>
           </div>
         </div>
-
+         
         {/* Box Progress Bar Section */}
         <div className="mt-6">
           <div className="flex justify-between text-[11px] font-black uppercase mb-2">

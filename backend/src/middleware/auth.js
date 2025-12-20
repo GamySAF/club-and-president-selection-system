@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const Student = require("../models/student.model");
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => { // ✅ Added: 'async' to allow database lookup
   let token;
 
   if (
@@ -17,11 +18,15 @@ const protect = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // decoded = { id, role, iat, exp }
-    req.user = {
-      id: decoded.id,
-      role: decoded.role,
-    };
+    // ✅ UPDATED: Fetch user from DB to include hasVoted and votedFor
+    const user = await Student.findById(decoded.id).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // Now req.user contains id, role, hasVoted, and votedFor
+    req.user = user;
 
     next();
   } catch (error) {

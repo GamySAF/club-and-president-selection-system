@@ -14,14 +14,13 @@ const StudentLogin = () => {
   const { user, login } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in, redirect immediately to prevent seeing login again
   useEffect(() => {
     if (user?.role === "student") {
       navigate("/student-dashboard", { replace: true });
     }
   }, [user, navigate]);
 
- const handleLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -34,8 +33,7 @@ const StudentLogin = () => {
       });
 
       const data = await res.json();
-      console.log("Full Server Response:", data); // Check this in your browser console!
-
+      
       if (!res.ok) {
         throw new Error(data.message || "Invalid email or password");
       }
@@ -44,17 +42,13 @@ const StudentLogin = () => {
       const actualUser = data.user ? data.user : data;
       const actualToken = data.token;
 
-   
-
-      // Convert to lowercase to be 100% sure the check passes
-    // Replace your navigation logic with this:
-if (actualUser.role?.toLowerCase() === "student") {
-    console.log("Navigating to Student Dashboard...");
-    navigate("/student-dashboard", { replace: true }); // Ensure the slash / is there
-}
-
+      // Ensure the login function receives the full user object 
+      // which now includes actualUser.votedFor from your updated backend
       login(actualUser, actualToken);
-      navigate("/student-dashboard", { replace: true });
+
+      if (actualUser.role?.toLowerCase() === "student") {
+        navigate("/student-dashboard", { replace: true });
+      }
 
     } catch (err) {
       setError(err.message);
@@ -77,7 +71,6 @@ if (actualUser.role?.toLowerCase() === "student") {
         </div>
 
         <form onSubmit={handleLogin} className="p-8 pt-4 space-y-4">
-          {/* Email Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
               Email Address
@@ -92,7 +85,6 @@ if (actualUser.role?.toLowerCase() === "student") {
             />
           </div>
 
-          {/* Password Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
               Password
@@ -107,7 +99,6 @@ if (actualUser.role?.toLowerCase() === "student") {
             />
           </div>
 
-          {/* Error Alert */}
           {error && (
             <div className="flex items-center gap-2 p-3.5 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-xs font-semibold animate-pulse">
               <AlertCircle size={16} />
@@ -115,7 +106,6 @@ if (actualUser.role?.toLowerCase() === "student") {
             </div>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}

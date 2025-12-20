@@ -117,6 +117,8 @@ exports.getAllStudents = async (req, res) => {
   }
 };
 
+
+
 // Update student by ID
 exports.updateStudent = async (req, res) => {
   try {

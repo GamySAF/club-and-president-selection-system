@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState } from "react";
 
+// 1. Create the context
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // ✅ FIXED: Added a check to prevent parsing "undefined"
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user");
     if (!savedUser || savedUser === "undefined") return null;
@@ -19,31 +19,21 @@ export const AuthProvider = ({ children }) => {
     return savedToken && savedToken !== "undefined" ? savedToken : null;
   });
 
-  // Added loading state for protected routes
   const [loading, setLoading] = useState(false);
 
-  // ADDED: Function to update user fields (like hasVoted) dynamically
-// ADDED: Function to update user fields (like hasVoted or selectedClubs) dynamically
   const updateUser = (newData) => {
     setUser((prev) => {
       if (!prev) return null;
-      
-      // We create the updated object
       const updated = { ...prev, ...newData };
-      
-      // ✅ CRITICAL: Update localStorage immediately so refresh doesn't lose data
       localStorage.setItem("user", JSON.stringify(updated));
       return updated;
     });
   };
 
   const login = (userData, token) => {
-    // Ensure we don't save "undefined" accidentally
     if (!userData || !token) return;
-
     setUser(userData);
     setToken(token);
-
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", token);
   };
@@ -53,11 +43,8 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    // Force a clear to be safe
-    localStorage.clear();
   };
 
-  // Added updateUser and loading to the provider value
   return (
     <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading }}>
       {children}
@@ -65,4 +52,11 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// 2. CRITICAL: This must be exactly 'export const useAuth'
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

@@ -1,160 +1,155 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { CheckCircle, User, Loader2, AlertCircle, ShieldCheck, Info } from "lucide-react";
+import { User, Loader2, ShieldCheck, ArrowLeft, Star, CheckCircle } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const VotePresident = () => {
   const { user, token, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [votingId, setVotingId] = useState(null);
-  const [message, setMessage] = useState({ type: "", text: "" });
+
+  // ✅ FIX 1: Convert to string immediately to avoid comparison errors
+  const hasVoted = user?.hasVoted;
+  const votedForId = user?.votedFor?.toString(); 
 
   useEffect(() => {
+    const fetchCandidates = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/student/candidates`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setCandidates(data);
+      } catch (err) {
+        console.error("Failed to load candidates", err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchCandidates();
-  }, []);
-
-  const fetchCandidates = async () => {
-    try {
-      // Endpoint to get all presidential candidates
-      const res = await fetch(`${API_URL}/api/student/candidates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      setCandidates(data);
-    } catch (err) {
-      setMessage({ type: "error", text: "Could not load candidates list." });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [token]);
 
   const handleVote = async (candidateId) => {
-    if (!window.confirm("Final Confirmation: You can only vote once per election. Proceed?")) return;
-
+    if (!window.confirm("Confirm your vote? This cannot be undone.")) return;
     setVotingId(candidateId);
-    setMessage({ type: "", text: "" });
 
     try {
       const res = await fetch(`${API_URL}/api/student/vote`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ candidateId }),
       });
 
       const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.message);
 
-      // 1. Update the local AuthContext state immediately
-      updateUser({ hasVoted: true });
-      
-      // 2. Show success message
-      setMessage({ type: "success", text: `Your vote for ${data.message.split('for ')[1] || 'your candidate'} has been recorded!` });
-      
+      if (res.ok) {
+        // ✅ FIX 2: Use the data returned from your updated backend
+        updateUser({ 
+          hasVoted: true, 
+          votedFor: candidateId 
+        });
+        
+        alert("Vote Cast Successfully!");
+        // We don't necessarily need window.location.reload() if updateUser is working properly,
+        // but it acts as a good safety net.
+        window.location.reload(); 
+      } else {
+        alert(data.message || "Voting failed");
+      }
     } catch (err) {
-      setMessage({ type: "error", text: err.message });
+      alert("Connection error. Try again.");
     } finally {
       setVotingId(null);
     }
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="animate-spin text-indigo-600" size={48} />
-        <p className="text-slate-500 font-medium tracking-wide">Loading Ballot...</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <Loader2 className="animate-spin text-blue-600" size={40} />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#f8fafc] py-10 px-4">
+      <div className="max-w-6xl mx-auto">
         
-        {/* Header Section */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Presidential Election</h1>
-          <p className="text-slate-500 mt-2 text-lg">Every vote counts. Make your choice for the next academic year.</p>
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <button onClick={() => navigate("/student-dashboard")} className="flex items-center gap-2 text-slate-500 font-bold mb-2 hover:text-blue-600 transition-colors">
+              <ArrowLeft size={18} /> Back to Dashboard
+            </button>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Presidential Election</h1>
+          </div>
+          {hasVoted && (
+            <div className="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl flex items-center gap-2 shadow-lg shadow-emerald-100 font-bold animate-in fade-in zoom-in">
+              <ShieldCheck size={18} /> Selection Confirmed
+            </div>
+          )}
         </div>
 
-        {/* Status Alerts */}
-        {user?.hasVoted && (
-          <div className="mb-8 p-5 bg-indigo-50 border border-indigo-100 rounded-[2rem] flex items-center gap-4">
-            <div className="p-2 bg-indigo-600 rounded-full text-white">
-              <ShieldCheck size={20} />
-            </div>
-            <div>
-              <p className="font-bold text-indigo-900">Voting Completed</p>
-              <p className="text-indigo-700 text-sm">You have already cast your ballot for this election cycle.</p>
-            </div>
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {candidates.map((candidate) => {
+            // ✅ FIX 3: Robust ID comparison using .toString()
+            const isSelected = votedForId === candidate._id.toString();
 
-        {message.text && (
-          <div className={`mb-8 p-5 rounded-[2rem] flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300 ${
-            message.type === "success" 
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-              : "bg-rose-50 text-rose-700 border border-rose-100"
-          }`}>
-            {message.type === "success" ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
-            <span className="font-bold">{message.text}</span>
-          </div>
-        )}
-
-        {/* Candidates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {candidates.map((candidate) => (
-            <div key={candidate._id} className={`group relative bg-white border rounded-[2.5rem] p-8 transition-all duration-300 ${
-              user?.hasVoted ? "border-slate-100 opacity-80" : "border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-300"
-            }`}>
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-400 transition-colors">
-                  <User size={40} />
-                </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                    Candidate
-                  </span>
-                </div>
-              </div>
-
-              <h3 className="text-2xl font-bold text-slate-900 mb-1">{candidate.name}</h3>
-              <p className="text-indigo-600 font-semibold mb-4">{candidate.party || "University Guild"}</p>
-              
-              <div className="bg-slate-50 rounded-2xl p-4 mb-8">
-                <p className="text-slate-600 text-sm leading-relaxed italic">
-                  "{candidate.manifesto || "Promising a better campus experience for every student through innovation and transparency."}"
-                </p>
-              </div>
-
-              <button
-                onClick={() => handleVote(candidate._id)}
-                disabled={votingId || user?.hasVoted}
-                className={`w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                  user?.hasVoted 
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                    : "bg-slate-900 text-white hover:bg-indigo-600 active:scale-95 shadow-lg shadow-slate-200"
+            return (
+              <div 
+                key={candidate._id} 
+                className={`relative p-8 rounded-[2.5rem] border-4 transition-all duration-500 bg-white ${
+                  isSelected 
+                    ? "border-blue-600 scale-[1.03] shadow-2xl z-10" 
+                    : hasVoted 
+                    ? "border-slate-50 opacity-40 grayscale" 
+                    : "border-slate-100 hover:border-blue-200 shadow-sm"
                 }`}
               >
-                {votingId === candidate._id ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : user?.hasVoted ? (
-                  <>
-                    <ShieldCheck size={18} />
-                    Ballot Submitted
-                  </>
-                ) : (
-                  "Select Candidate"
+                {isSelected && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-xl animate-bounce">
+                    <Star size={12} fill="white" /> Your Choice
+                  </div>
                 )}
-              </button>
-            </div>
-          ))}
+
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
+                  isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400"
+                }`}>
+                  <User size={32} />
+                </div>
+
+                <h3 className={`text-xl font-bold mb-1 ${isSelected ? "text-blue-600" : "text-slate-900"}`}>
+                  {candidate.name}
+                </h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-6">
+                  {candidate.party || "Guild Candidate"}
+                </p>
+
+                <button
+                  onClick={() => handleVote(candidate._id)}
+                  disabled={hasVoted || votingId}
+                  className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                    isSelected 
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                      : hasVoted 
+                      ? "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200" 
+                      : "bg-slate-900 text-white hover:bg-blue-600 active:scale-95"
+                  }`}
+                >
+                  {votingId === candidate._id ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : isSelected ? (
+                    <><CheckCircle size={16}/> Selected</>
+                  ) : hasVoted ? (
+                    "Locked"
+                  ) : (
+                    "Cast Vote"
+                  )}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
