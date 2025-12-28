@@ -140,15 +140,46 @@ exports.updateStudent = async (req, res) => {
 // Delete student by ID
 exports.deleteStudent = async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id);
+    const studentId = req.params.id;
+
+    // 1. Find the student
+    const student = await Student.findById(studentId);
     if (!student) return res.status(404).json({ message: "Student not found" });
 
-    await Student.findByIdAndDelete(req.params.id);
-    res.json({ message: "Student deleted successfully" });
+    console.log(`Deleting student: ${student.name}. Voted for: ${student.votedFor}`);
+
+    // 2. Decrement Vote Count (The Fix)
+    if (student.hasVoted && student.votedFor) {
+      const updatedCandidate = await Candidate.findByIdAndUpdate(
+        student.votedFor, 
+        { $inc: { votes: -1 } },
+        { new: true } // returns the updated candidate to console
+      );
+      console.log("Updated Candidate Votes:", updatedCandidate?.votes);
+    }
+
+    // 3. OPTIONAL: If you want clubs to also lose a member count
+    if (student.selectedClubs && student.selectedClubs.length > 0) {
+      await Club.updateMany(
+        { _id: { $in: student.selectedClubs } },
+        { $pull: { members: studentId } } // Removes student from club member list
+      );
+    }
+
+    // 4. Finally Delete
+    await Student.findByIdAndDelete(studentId);
+    
+    res.json({ success: true, message: "Student and data removed" });
   } catch (error) {
+    console.error("Delete Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
+// Add this to your routes: router.get("/sync-votes", adminController.recalculateVotes);
+
+
+// A one-time fix to sync candidate votes with real student data
 
 // ------------------ CANDIDATE MANAGEMENT ------------------
 
@@ -265,12 +296,19 @@ exports.deleteClub = async (req, res) => {
 };
 
 // ------------------ RESULTS ------------------
-
-// View full results (Admin)
 exports.viewResults = async (req, res) => {
   try {
     const candidates = await Candidate.find();
-    const totalStudents = await Student.countDocuments();
+    
+    // --- TEMPORARY AUTO-SYNC ---
+    for (let candidate of candidates) {
+      const actualVotes = await Student.countDocuments({ votedFor: candidate._id });
+      candidate.votes = actualVotes;
+      await candidate.save();
+    }
+    // ---------------------------
+
+    const totalStudents = await Student.countDocuments({ role: "student" });
     const totalVoted = await Student.countDocuments({ hasVoted: true });
 
     res.json({

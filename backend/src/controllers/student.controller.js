@@ -269,9 +269,20 @@ exports.getAllClubs = async (req, res) => {
 
 exports.viewResultsStudent = async (req, res) => {
   try {
-    const candidates = await Candidate.find().select("name votes -_id");
-    res.json(candidates);
+    // 1. Get candidates (Admin already synced them, so we just find them)
+    const candidates = await Candidate.find().sort("-votes");
+
+    // 2. Get the same stats the Admin sees
+    const totalStudents = await Student.countDocuments({ role: "student" });
+    const totalVoted = await Student.countDocuments({ hasVoted: true });
+
+    // 3. Return the EXACT same object structure
+    res.json({
+      candidates,
+      totalStudents,
+      totalVoted, // Match the Admin key name!
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};

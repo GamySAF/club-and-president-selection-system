@@ -14,7 +14,9 @@ const {
   viewResults,
   getAllCandidates,
   getAllClubs,
-  loginAdmin
+  loginAdmin,
+
+  
 } = require("../controllers/admin.controller");
 
 router.post("/login", loginAdmin);
@@ -22,6 +24,7 @@ router.post("/login", loginAdmin);
 
 const protect = require("../middleware/auth");
 const adminOnly = require("../middleware/adminOnly");
+
 
 // STUDENT MANAGEMENT
 router.post("/students", protect, adminOnly, registerStudent);
@@ -43,7 +46,6 @@ router.get("/clubs", protect, adminOnly, getAllClubs);
 
 // VIEW RESULTS
 router.get("/results", protect, adminOnly, viewResults);
-
 
 
 
